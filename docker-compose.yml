@@ -1,0 +1,53 @@
+version: '2'
+
+services:
+  redis-master:
+    image: 'docker.io/bitnami/redis:6.0-debian-10'
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_PASSWORD=masterpassword123
+    ports:
+      - '6379'
+    volumes:
+      - 'redis_data_master:/bitnami/redis/data'
+
+  redis-slave:
+    image: 'docker.io/bitnami/redis:6.0-debian-10'
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - REDIS_REPLICATION_MODE=slave
+      - REDIS_MASTER_HOST=redis-master
+      - REDIS_MASTER_PORT_NUMBER=6379
+      - REDIS_MASTER_PASSWORD=masterpassword123
+      - REDIS_PASSWORD=password123   
+    ports:
+      - '6379'
+    depends_on:
+      - redis-master      
+    volumes:
+      - 'redis_data_slave:/bitnami/redis/data'
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    environment:
+    - REDIS_HOSTS=local:redis-master:6379:0:masterpassword123,local:redis-slave:6379:0:password123
+    ports:
+    - "8081:8081"        
+
+  redisinsight:
+    image: redislabs/redisinsight:latest
+    restart: always
+    ports:
+    - "8001:8001"
+    volumes:
+      - 'redisinsight:/db'
+
+volumes:
+  redis_data_master:
+    driver: local
+  redis_data_slave: 
+    driver: local 
+  redisinsight:
+    driver: local
